@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Generador de Paletas RGB</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --text: #000000;
+    --card-bg: #f0f0f0;
+  }
+  [data-theme='dark'] {
+    --bg: #121212;
+    --text: #e0e0e0;
+    --card-bg: #1e1e1e;
+  }
+  body {
+    background-color: var(--bg);
+    color: var(--text);
+    font-family: Arial, sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 2rem;
+    transition: background-color 0.3s, color 0.3s;
+  }
+  h1 { margin-bottom: 1rem; }
+  .palette {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    justify-content: center;
+    margin: 2rem 0;
+  }
+  .color-card {
+    width: 120px;
+    height: 120px;
+    border-radius: 8px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--card-bg);
+    color: var(--text);
+    font-weight: bold;
+    cursor: pointer;
+    transition: transform 0.2s;
+  }
+  .color-card:hover { transform: scale(1.05); }
+  button {
+    padding: 0.5rem 1rem;
+    font-size: 1rem;
+    cursor: pointer;
+  }
+  .toggle {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+  }
+</style>
+</head>
+<body>
+<button class="toggle">Modo Oscuro</button>
+<h1>Generador de paletas RGB</h1>
+<div class="palette" id="palette"></div>
+<button id="generate">Nueva Paleta</button>
+<script>
+const root = document.documentElement;
+const toggleBtn = document.querySelector('.toggle');
+const generateBtn = document.getElementById('generate');
+const paletteDiv = document.getElementById('palette');
+let darkMode = false;
+function hslToHex(h,s,l){
+  s/=100; l/=100;
+  const k=n => (n + h/30) % 12;
+  const a=s * Math.min(l,1-l);
+  const f=n => l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n),1)));
+  return `#${[f(0),f(8),f(4)].map(x=>Math.round(255*x).toString(16).padStart(2,'0')).join('')}`;
+}
+function generatePalette(){
+  paletteDiv.innerHTML = '';
+  const base = Math.floor(Math.random()*360);
+  const hues = [base,(base+180)%360,(base+60)%360,(base+240)%360,(base+120)%360];
+  hues.forEach(h => {
+    const hex = hslToHex(h,70,50);
+    const card = document.createElement('div');
+    card.className = 'color-card';
+    card.style.backgroundColor = hex;
+    card.textContent = hex;
+    card.addEventListener('click',()=>{ if(navigator.clipboard){navigator.clipboard.writeText(hex);} });
+    paletteDiv.appendChild(card);
+  });
+}
+toggleBtn.addEventListener('click',()=>{
+  darkMode = !darkMode;
+  if(darkMode){
+    root.setAttribute('data-theme','dark');
+    toggleBtn.textContent='Modo Claro';
+  } else {
+    root.removeAttribute('data-theme');
+    toggleBtn.textContent='Modo Oscuro';
+  }
+});
+generateBtn.addEventListener('click',generatePalette);
+generatePalette();
+</script>
+</body>
+</html>
