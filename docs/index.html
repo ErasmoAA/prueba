@@ -97,8 +97,10 @@
         </select>
       </div>
       <div>
+
         <label for="radius">Radio:</label>
         <input type="number" id="radius" value="5" min="1" max="20">
+        
       </div>
       <div>
         <label for="color">Color:</label>
@@ -113,6 +115,7 @@
     </div>
   </div>
   <script>
+    
     // Funciones auxiliares para crear figuras con three.js
     function createSphere(radius, color) {
       const geometry = new THREE.SphereGeometry(radius, 32, 32);
@@ -137,6 +140,7 @@
     const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     const viewer = document.getElementById('viewer');
+
     viewer.appendChild(renderer.domElement);
     renderer.setSize(viewer.clientWidth, viewer.clientHeight);
 
@@ -150,6 +154,7 @@
 
     let mesh = null;
     function updateMesh() {
+
       const radius = parseFloat(document.getElementById('radius').value);
       const color = document.getElementById('color').value;
       const type = document.getElementById('shape').value;
@@ -175,11 +180,13 @@
     renderer.clippingPlanes = [clipPlane];
     const sliceRange = document.getElementById('sliceRange');
     sliceRange.addEventListener('input', () => {
+
       clipPlane.constant = -parseFloat(sliceRange.value);
     });
 
     document.getElementById('shape').addEventListener('change', updateMesh);
     document.getElementById('radius').addEventListener('input', updateMesh);
+      
     document.getElementById('color').addEventListener('input', updateMesh);
     document.getElementById('isoBtn').addEventListener('click', () => {
       camera.position.set(10, 10, 10);
