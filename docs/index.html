@@ -97,8 +97,16 @@
         </select>
       </div>
       <div>
-        <label for="radius">Radio:</label>
-        <input type="number" id="radius" value="5" min="1" max="20">
+        <label for="width">Ancho (w):</label>
+        <input type="number" id="width" value="20" min="1" max="50">
+      </div>
+      <div>
+        <label for="depth">Profundidad (d):</label>
+        <input type="number" id="depth" value="20" min="1" max="50">
+      </div>
+      <div>
+        <label for="height">Altura (h):</label>
+        <input type="number" id="height" value="20" min="1" max="50">
       </div>
       <div>
         <label for="color">Color:</label>
@@ -113,23 +121,45 @@
     </div>
   </div>
   <script>
-    // Funciones auxiliares para crear figuras con three.js
-    function createSphere(radius, color) {
-      const geometry = new THREE.SphereGeometry(radius, 32, 32);
+    // Pequeña biblioteca "tri" basada en Three.js
+    function createSphere(w, d, h, color) {
+      const r = Math.max(w, d, h) / 2;
+      const geometry = new THREE.SphereGeometry(r, 32, 32);
       const material = new THREE.MeshStandardMaterial({ color });
-      return new THREE.Mesh(geometry, material);
+      const mesh = new THREE.Mesh(geometry, material);
+      mesh.scale.set(w / (2 * r), h / (2 * r), d / (2 * r));
+      return mesh;
     }
 
-    function createDome(radius, color) {
-      const geometry = new THREE.SphereGeometry(radius, 32, 32, 0, Math.PI * 2, 0, Math.PI / 2);
+    function createDome(w, d, h, color) {
+      const r = Math.max(w, d, h) / 2;
+      const geometry = new THREE.SphereGeometry(r, 32, 32, 0, Math.PI * 2, 0, Math.PI / 2);
       const material = new THREE.MeshStandardMaterial({ color, side: THREE.DoubleSide });
-      return new THREE.Mesh(geometry, material);
+      const mesh = new THREE.Mesh(geometry, material);
+      mesh.scale.set(w / (2 * r), h / (2 * r), d / (2 * r));
+      return mesh;
     }
 
-    function createCone(radius, color) {
-      const geometry = new THREE.ConeGeometry(radius, radius * 2, 32);
+    function createCone(w, d, h, color) {
+      const r = Math.max(w, d) / 2;
+      const geometry = new THREE.ConeGeometry(r, h, 32);
       const material = new THREE.MeshStandardMaterial({ color });
-      return new THREE.Mesh(geometry, material);
+      const mesh = new THREE.Mesh(geometry, material);
+      mesh.scale.set(w / (2 * r), 1, d / (2 * r));
+      return mesh;
+    }
+
+    function parseHash() {
+      if (location.hash.length > 1) {
+        try {
+          return JSON.parse(decodeURIComponent(location.hash.slice(1)));
+        } catch (e) { /* ignore */ }
+      }
+      return { w: 20, d: 20, h: 20, s: 'dome', color: '#ff0000' };
+    }
+
+    function writeHash(obj) {
+      location.hash = encodeURIComponent(JSON.stringify(obj));
     }
 
     // Escena básica
@@ -139,6 +169,13 @@
     const viewer = document.getElementById('viewer');
     viewer.appendChild(renderer.domElement);
     renderer.setSize(viewer.clientWidth, viewer.clientHeight);
+
+    let settings = parseHash();
+    document.getElementById('width').value = settings.w;
+    document.getElementById('depth').value = settings.d;
+    document.getElementById('height').value = settings.h;
+    document.getElementById('shape').value = settings.s;
+    document.getElementById('color').value = settings.color;
 
     camera.position.set(10, 10, 10);
     camera.lookAt(0, 0, 0);
@@ -150,14 +187,18 @@
 
     let mesh = null;
     function updateMesh() {
-      const radius = parseFloat(document.getElementById('radius').value);
-      const color = document.getElementById('color').value;
-      const type = document.getElementById('shape').value;
+      settings.w = parseFloat(document.getElementById('width').value);
+      settings.d = parseFloat(document.getElementById('depth').value);
+      settings.h = parseFloat(document.getElementById('height').value);
+      settings.color = document.getElementById('color').value;
+      settings.s = document.getElementById('shape').value;
       if (mesh) scene.remove(mesh);
-      if (type === 'sphere') mesh = createSphere(radius, color);
-      if (type === 'dome') mesh = createDome(radius, color);
-      if (type === 'cone') mesh = createCone(radius, color);
+      if (settings.s === 'sphere') mesh = createSphere(settings.w, settings.d, settings.h, settings.color);
+      if (settings.s === 'dome') mesh = createDome(settings.w, settings.d, settings.h, settings.color);
+      if (settings.s === 'cone') mesh = createCone(settings.w, settings.d, settings.h, settings.color);
       scene.add(mesh);
+      writeHash(settings);
+      clipPlane.constant = -parseFloat(sliceRange.value) * settings.h;
     }
 
     function onWindowResize() {
@@ -175,11 +216,13 @@
     renderer.clippingPlanes = [clipPlane];
     const sliceRange = document.getElementById('sliceRange');
     sliceRange.addEventListener('input', () => {
-      clipPlane.constant = -parseFloat(sliceRange.value);
+      clipPlane.constant = -parseFloat(sliceRange.value) * settings.h;
     });
 
     document.getElementById('shape').addEventListener('change', updateMesh);
-    document.getElementById('radius').addEventListener('input', updateMesh);
+    document.getElementById('width').addEventListener('input', updateMesh);
+    document.getElementById('depth').addEventListener('input', updateMesh);
+    document.getElementById('height').addEventListener('input', updateMesh);
     document.getElementById('color').addEventListener('input', updateMesh);
     document.getElementById('isoBtn').addEventListener('click', () => {
       camera.position.set(10, 10, 10);
