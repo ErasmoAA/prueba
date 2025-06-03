@@ -1,109 +1,199 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Generador de Paletas RGB</title>
-<style>
-  :root {
-    --bg: #ffffff;
-    --text: #000000;
-    --card-bg: #f0f0f0;
-  }
-  [data-theme='dark'] {
-    --bg: #121212;
-    --text: #e0e0e0;
-    --card-bg: #1e1e1e;
-  }
-  body {
-    background-color: var(--bg);
-    color: var(--text);
-    font-family: Arial, sans-serif;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 2rem;
-    transition: background-color 0.3s, color 0.3s;
-  }
-  h1 { margin-bottom: 1rem; }
-  .palette {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 1rem;
-    justify-content: center;
-    margin: 2rem 0;
-  }
-  .color-card {
-    width: 120px;
-    height: 120px;
-    border-radius: 8px;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background-color: var(--card-bg);
-    color: var(--text);
-    font-weight: bold;
-    cursor: pointer;
-    transition: transform 0.2s;
-  }
-  .color-card:hover { transform: scale(1.05); }
-  button {
-    padding: 0.5rem 1rem;
-    font-size: 1rem;
-    cursor: pointer;
-  }
-  .toggle {
-    position: absolute;
-    top: 1rem;
-    right: 1rem;
-  }
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Visualizador 3D con Controles</title>
+  <script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      display: flex;
+      height: 100vh;
+    }
+    #container {
+      display: flex;
+      width: 100%;
+    }
+    #controls {
+      width: 280px;
+      padding: 1rem;
+      background: #f2f2f2;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+    #viewer {
+      flex: 1;
+      position: relative;
+    }
+    #viewer canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+    label {
+      display: block;
+      font-size: 0.9rem;
+      margin-bottom: 0.25rem;
+    }
+    .slider-container {
+      position: absolute;
+      top: 0;
+      right: 0;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      padding: 0 0.5rem;
+      box-sizing: border-box;
+    }
+    .slider-container input[type=range] {
+      writing-mode: bt-lr; /* vertical */
+      transform: rotate(270deg);
+      width: 200px;
+    }
+    button {
+      padding: 0.5rem 1rem;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+    @media (max-width: 768px) {
+      #container {
+        flex-direction: column;
+      }
+      #controls {
+        width: 100%;
+        flex-direction: row;
+        flex-wrap: wrap;
+      }
+      #viewer {
+        height: 60vh;
+      }
+      .slider-container {
+        position: static;
+        transform: rotate(0);
+        width: 100%;
+        justify-content: center;
+        margin-top: 1rem;
+      }
+      .slider-container input[type=range] {
+        width: 100%;
+        transform: rotate(0);
+      }
+    }
+  </style>
 </head>
 <body>
-<button class="toggle">Modo Oscuro</button>
-<h1>Generador de paletas RGB</h1>
-<div class="palette" id="palette"></div>
-<button id="generate">Nueva Paleta</button>
-<script>
-const root = document.documentElement;
-const toggleBtn = document.querySelector('.toggle');
-const generateBtn = document.getElementById('generate');
-const paletteDiv = document.getElementById('palette');
-let darkMode = false;
-function hslToHex(h,s,l){
-  s/=100; l/=100;
-  const k=n => (n + h/30) % 12;
-  const a=s * Math.min(l,1-l);
-  const f=n => l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n),1)));
-  return `#${[f(0),f(8),f(4)].map(x=>Math.round(255*x).toString(16).padStart(2,'0')).join('')}`;
-}
-function generatePalette(){
-  paletteDiv.innerHTML = '';
-  const base = Math.floor(Math.random()*360);
-  const hues = [base,(base+180)%360,(base+60)%360,(base+240)%360,(base+120)%360];
-  hues.forEach(h => {
-    const hex = hslToHex(h,70,50);
-    const card = document.createElement('div');
-    card.className = 'color-card';
-    card.style.backgroundColor = hex;
-    card.textContent = hex;
-    card.addEventListener('click',()=>{ if(navigator.clipboard){navigator.clipboard.writeText(hex);} });
-    paletteDiv.appendChild(card);
-  });
-}
-toggleBtn.addEventListener('click',()=>{
-  darkMode = !darkMode;
-  if(darkMode){
-    root.setAttribute('data-theme','dark');
-    toggleBtn.textContent='Modo Claro';
-  } else {
-    root.removeAttribute('data-theme');
-    toggleBtn.textContent='Modo Oscuro';
-  }
-});
-generateBtn.addEventListener('click',generatePalette);
-generatePalette();
-</script>
+  <div id="container">
+    <div id="controls">
+      <div>
+        <label for="shape">Figura:</label>
+        <select id="shape">
+          <option value="sphere">Esfera</option>
+          <option value="dome">Domo</option>
+          <option value="cone">Cono</option>
+        </select>
+      </div>
+      <div>
+        <label for="radius">Radio:</label>
+        <input type="number" id="radius" value="5" min="1" max="20">
+      </div>
+      <div>
+        <label for="color">Color:</label>
+        <input type="color" id="color" value="#ff0000">
+      </div>
+      <button id="isoBtn">Vista Isométrica</button>
+    </div>
+    <div id="viewer">
+      <div class="slider-container">
+        <input type="range" id="sliceRange" min="0" max="1" step="0.01" value="1" title="Desliza para ver el interior">
+      </div>
+    </div>
+  </div>
+  <script>
+    // Funciones auxiliares para crear figuras con three.js
+    function createSphere(radius, color) {
+      const geometry = new THREE.SphereGeometry(radius, 32, 32);
+      const material = new THREE.MeshStandardMaterial({ color });
+      return new THREE.Mesh(geometry, material);
+    }
+
+    function createDome(radius, color) {
+      const geometry = new THREE.SphereGeometry(radius, 32, 32, 0, Math.PI * 2, 0, Math.PI / 2);
+      const material = new THREE.MeshStandardMaterial({ color, side: THREE.DoubleSide });
+      return new THREE.Mesh(geometry, material);
+    }
+
+    function createCone(radius, color) {
+      const geometry = new THREE.ConeGeometry(radius, radius * 2, 32);
+      const material = new THREE.MeshStandardMaterial({ color });
+      return new THREE.Mesh(geometry, material);
+    }
+
+    // Escena básica
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    const viewer = document.getElementById('viewer');
+    viewer.appendChild(renderer.domElement);
+    renderer.setSize(viewer.clientWidth, viewer.clientHeight);
+
+    camera.position.set(10, 10, 10);
+    camera.lookAt(0, 0, 0);
+
+    const light = new THREE.DirectionalLight(0xffffff, 1);
+    light.position.set(5, 10, 7.5);
+    scene.add(light);
+    scene.add(new THREE.AmbientLight(0x555555));
+
+    let mesh = null;
+    function updateMesh() {
+      const radius = parseFloat(document.getElementById('radius').value);
+      const color = document.getElementById('color').value;
+      const type = document.getElementById('shape').value;
+      if (mesh) scene.remove(mesh);
+      if (type === 'sphere') mesh = createSphere(radius, color);
+      if (type === 'dome') mesh = createDome(radius, color);
+      if (type === 'cone') mesh = createCone(radius, color);
+      scene.add(mesh);
+    }
+
+    function onWindowResize() {
+      const width = viewer.clientWidth;
+      const height = viewer.clientHeight;
+      renderer.setSize(width, height);
+      camera.aspect = width / height;
+      camera.updateProjectionMatrix();
+    }
+
+    window.addEventListener('resize', onWindowResize);
+
+    // Slider para "cortar" la figura
+    const clipPlane = new THREE.Plane(new THREE.Vector3(0, -1, 0), 0);
+    renderer.clippingPlanes = [clipPlane];
+    const sliceRange = document.getElementById('sliceRange');
+    sliceRange.addEventListener('input', () => {
+      clipPlane.constant = -parseFloat(sliceRange.value);
+    });
+
+    document.getElementById('shape').addEventListener('change', updateMesh);
+    document.getElementById('radius').addEventListener('input', updateMesh);
+    document.getElementById('color').addEventListener('input', updateMesh);
+    document.getElementById('isoBtn').addEventListener('click', () => {
+      camera.position.set(10, 10, 10);
+      camera.lookAt(0, 0, 0);
+    });
+
+    updateMesh();
+
+    function animate() {
+      requestAnimationFrame(animate);
+      if (mesh) mesh.rotation.y += 0.005;
+      renderer.render(scene, camera);
+    }
+    animate();
+  </script>
 </body>
 </html>
